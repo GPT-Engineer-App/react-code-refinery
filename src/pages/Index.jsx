@@ -11,7 +11,7 @@ import 'prismjs/components/prism-tsx';
 const CodeDisplay = ({ code, language, highlightRanges }) => {
   useEffect(() => {
     Prism.highlightAll();
-  }, [code, highlightRange]);
+  }, [code, highlightRanges]);
 
   let highlightedCode = code;
   if (highlightRanges.length > 0) {
