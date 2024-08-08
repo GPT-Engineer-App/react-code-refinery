@@ -8,16 +8,21 @@ import 'prismjs/components/prism-jsx';
 import 'prismjs/components/prism-typescript';
 import 'prismjs/components/prism-tsx';
 
-const CodeDisplay = ({ code, language, highlightRange }) => {
+const CodeDisplay = ({ code, language, highlightRanges }) => {
   useEffect(() => {
     Prism.highlightAll();
   }, [code, highlightRange]);
 
-  const highlightedCode = highlightRange
-    ? code.slice(0, highlightRange.start) +
-      `<span class="bg-yellow-200">${code.slice(highlightRange.start, highlightRange.end)}</span>` +
-      code.slice(highlightRange.end)
-    : code;
+  let highlightedCode = code;
+  if (highlightRanges.length > 0) {
+    highlightRanges.sort((a, b) => b.start - a.start);
+    highlightRanges.forEach(range => {
+      highlightedCode = 
+        highlightedCode.slice(0, range.start) +
+        `<span class="bg-yellow-200">${highlightedCode.slice(range.start, range.end)}</span>` +
+        highlightedCode.slice(range.end);
+    });
+  }
 
   return (
     <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto">
@@ -64,38 +69,37 @@ export default MyComponent;
   const [replaceText, setReplaceText] = useState('const MyUpdatedComponent');
   const [codeText, setCodeText] = useState(originalCode.current);
 
-  const [highlightRange, setHighlightRange] = useState(null);
-  const [currentSearchIndex, setCurrentSearchIndex] = useState(0);
+  const [highlightRanges, setHighlightRanges] = useState([]);
 
   const performSearch = useCallback(() => {
-    const searchIndex = codeText.indexOf(searchText);
-    if (searchIndex !== -1) {
-      setHighlightRange({
-        start: searchIndex,
-        end: searchIndex + searchText.length,
-      });
-    } else {
-      setHighlightRange(null);
+    const ranges = [];
+    let startIndex = 0;
+    while (true) {
+      const index = codeText.indexOf(searchText, startIndex);
+      if (index === -1) break;
+      ranges.push({ start: index, end: index + searchText.length });
+      startIndex = index + 1;
     }
+    setHighlightRanges(ranges);
   }, [codeText, searchText]);
 
   const performReplace = useCallback(() => {
-    if (highlightRange) {
-      const newCodeText =
-        codeText.slice(0, highlightRange.start) +
+    let newCodeText = codeText;
+    highlightRanges.sort((a, b) => b.start - a.start).forEach(range => {
+      newCodeText = 
+        newCodeText.slice(0, range.start) +
         replaceText +
-        codeText.slice(highlightRange.end);
-      setCodeText(newCodeText);
-      setHighlightRange(null);
-    }
-  }, [codeText, replaceText, highlightRange]);
+        newCodeText.slice(range.end);
+    });
+    setCodeText(newCodeText);
+    setHighlightRanges([]);
+  }, [codeText, replaceText, highlightRanges]);
 
   const handleSearchReplace = () => {
-    if (currentSearchIndex < searchText.length) {
-      setCurrentSearchIndex((prev) => prev + 1);
+    if (highlightRanges.length === 0) {
+      performSearch();
     } else {
       performReplace();
-      setCurrentSearchIndex(0);
     }
   };
 
@@ -103,24 +107,16 @@ export default MyComponent;
     setSearchText('');
     setReplaceText('');
     setCodeText(originalCode.current);
-    setHighlightRange(null);
-    setCurrentSearchIndex(0);
+    setHighlightRanges([]);
   };
 
   useEffect(() => {
-    if (currentSearchIndex > 0) {
-      const partialSearch = searchText.slice(0, currentSearchIndex);
-      const searchIndex = codeText.indexOf(partialSearch);
-      if (searchIndex !== -1) {
-        setHighlightRange({
-          start: searchIndex,
-          end: searchIndex + partialSearch.length,
-        });
-      } else {
-        setHighlightRange(null);
-      }
-    }
-  }, [currentSearchIndex, searchText, codeText]);
+    const delayDebounceFn = setTimeout(() => {
+      performSearch();
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchText, codeText, performSearch]);
 
   return (
     <div className="min-h-screen flex bg-white">
@@ -148,7 +144,7 @@ export default MyComponent;
       </div>
       <div className="w-2/3 p-4">
         <h2 className="text-2xl font-bold mb-4">Code</h2>
-        <CodeDisplay code={codeText} language="jsx" highlightRange={highlightRange} />
+        <CodeDisplay code={codeText} language="jsx" highlightRanges={highlightRanges} />
       </div>
     </div>
   );
