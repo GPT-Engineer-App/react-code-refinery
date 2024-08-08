@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 import Prism from 'prismjs';
 import 'prismjs/themes/prism.css';
 import 'prismjs/components/prism-javascript';
@@ -7,21 +8,30 @@ import 'prismjs/components/prism-jsx';
 import 'prismjs/components/prism-typescript';
 import 'prismjs/components/prism-tsx';
 
-const CodeDisplay = ({ code, language }) => {
+const CodeDisplay = ({ code, language, highlightRange }) => {
   useEffect(() => {
     Prism.highlightAll();
-  }, [code]);
+  }, [code, highlightRange]);
+
+  const highlightedCode = highlightRange
+    ? code.slice(0, highlightRange.start) +
+      `<span class="bg-yellow-200">${code.slice(highlightRange.start, highlightRange.end)}</span>` +
+      code.slice(highlightRange.end)
+    : code;
 
   return (
     <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto">
-      <code className={`language-${language}`}>{code}</code>
+      <code
+        className={`language-${language}`}
+        dangerouslySetInnerHTML={{ __html: highlightedCode }}
+      />
     </pre>
   );
 };
 
 const Index = () => {
-  const [searchText, setSearchText] = useState('const MyComponent = () => {\n  return (\n    <div>\n      <h1>Hello, World!</h1>\n    </div>\n  );\n};');
-  const [replaceText, setReplaceText] = useState('const MyComponent = () => {\n  return (\n    <div>\n      <h1>Hello, React!</h1>\n      <p>Welcome to my app.</p>\n    </div>\n  );\n};');
+  const [searchText, setSearchText] = useState('const MyComponent');
+  const [replaceText, setReplaceText] = useState('const MyUpdatedComponent');
   const [codeText, setCodeText] = useState(`
 import React, { useState, useEffect } from 'react';
 
@@ -52,6 +62,56 @@ const MyComponent = () => {
 export default MyComponent;
   `.trim());
 
+  const [highlightRange, setHighlightRange] = useState(null);
+  const [currentSearchIndex, setCurrentSearchIndex] = useState(0);
+
+  const performSearch = useCallback(() => {
+    const searchIndex = codeText.indexOf(searchText);
+    if (searchIndex !== -1) {
+      setHighlightRange({
+        start: searchIndex,
+        end: searchIndex + searchText.length,
+      });
+    } else {
+      setHighlightRange(null);
+    }
+  }, [codeText, searchText]);
+
+  const performReplace = useCallback(() => {
+    if (highlightRange) {
+      const newCodeText =
+        codeText.slice(0, highlightRange.start) +
+        replaceText +
+        codeText.slice(highlightRange.end);
+      setCodeText(newCodeText);
+      setHighlightRange(null);
+    }
+  }, [codeText, replaceText, highlightRange]);
+
+  const handleSearchReplace = () => {
+    if (currentSearchIndex < searchText.length) {
+      setCurrentSearchIndex((prev) => prev + 1);
+    } else {
+      performReplace();
+      setCurrentSearchIndex(0);
+    }
+  };
+
+  useEffect(() => {
+    if (currentSearchIndex > 0) {
+      const partialSearch = searchText.slice(0, currentSearchIndex);
+      const searchIndex = codeText.indexOf(partialSearch);
+      if (searchIndex !== -1) {
+        setHighlightRange({
+          start: searchIndex,
+          end: searchIndex + partialSearch.length,
+        });
+      } else {
+        setHighlightRange(null);
+      }
+    }
+  }, [currentSearchIndex, searchText, codeText]);
+
   return (
     <div className="min-h-screen flex bg-white">
       <div className="w-1/3 p-4 border-r">
@@ -67,10 +127,13 @@ export default MyComponent;
           onChange={(e) => setReplaceText(e.target.value)}
           className="mb-4 h-40"
         />
+        <Button onClick={handleSearchReplace}>
+          {currentSearchIndex < searchText.length ? "Search" : "Replace"}
+        </Button>
       </div>
       <div className="w-2/3 p-4">
         <h2 className="text-2xl font-bold mb-4">Code</h2>
-        <CodeDisplay code={codeText} language="jsx" />
+        <CodeDisplay code={codeText} language="jsx" highlightRange={highlightRange} />
       </div>
     </div>
   );
