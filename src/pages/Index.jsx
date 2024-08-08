@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import Prism from 'prismjs';
@@ -30,9 +30,39 @@ const CodeDisplay = ({ code, language, highlightRange }) => {
 };
 
 const Index = () => {
+  const originalCode = useRef(`
+import React, { useState, useEffect } from 'react';
+
+const MyComponent = () => {
+  const [data, setData] = useState([]);
+
+  useEffect(() => {
+    async function fetchData() {
+      const response = await fetch('https://api.example.com/data');
+      const result = await response.json();
+      setData(result);
+    }
+    fetchData();
+  }, []);
+
+  return (
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Data List</h1>
+      <ul>
+        {data.map(item => (
+          <li key={item.id}>{item.name}</li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
+export default MyComponent;
+  `.trim());
+
   const [searchText, setSearchText] = useState('const MyComponent');
   const [replaceText, setReplaceText] = useState('const MyUpdatedComponent');
-  const [codeText, setCodeText] = useState(`
+  const [codeText, setCodeText] = useState(originalCode.current);
 import React, { useState, useEffect } from 'react';
 
 const MyComponent = () => {
@@ -97,6 +127,14 @@ export default MyComponent;
     }
   };
 
+  const handleReset = () => {
+    setSearchText('');
+    setReplaceText('');
+    setCodeText(originalCode.current);
+    setHighlightRange(null);
+    setCurrentSearchIndex(0);
+  };
+
   useEffect(() => {
     if (currentSearchIndex > 0) {
       const partialSearch = searchText.slice(0, currentSearchIndex);
@@ -127,9 +165,14 @@ export default MyComponent;
           onChange={(e) => setReplaceText(e.target.value)}
           className="mb-4 h-40"
         />
-        <Button onClick={handleSearchReplace}>
-          {currentSearchIndex < searchText.length ? "Search" : "Replace"}
-        </Button>
+        <div className="flex space-x-2">
+          <Button onClick={handleSearchReplace}>
+            {currentSearchIndex < searchText.length ? "Search" : "Replace"}
+          </Button>
+          <Button onClick={handleReset} variant="outline">
+            Reset
+          </Button>
+        </div>
       </div>
       <div className="w-2/3 p-4">
         <h2 className="text-2xl font-bold mb-4">Code</h2>
