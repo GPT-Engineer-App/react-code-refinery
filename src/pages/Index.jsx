@@ -74,18 +74,19 @@ export default MyComponent;
   const performSearch = useCallback(() => {
     const ranges = [];
     let startIndex = 0;
-    while (true) {
+    while (startIndex < codeText.length) {
       const index = codeText.indexOf(searchText, startIndex);
       if (index === -1) break;
       ranges.push({ start: index, end: index + searchText.length });
-      startIndex = index + 1;
+      startIndex = index + searchText.length;
     }
     setHighlightRanges(ranges);
   }, [codeText, searchText]);
 
   const performReplace = useCallback(() => {
     let newCodeText = codeText;
-    highlightRanges.sort((a, b) => b.start - a.start).forEach(range => {
+    const sortedRanges = [...highlightRanges].sort((a, b) => b.start - a.start);
+    sortedRanges.forEach(range => {
       newCodeText = 
         newCodeText.slice(0, range.start) +
         replaceText +
