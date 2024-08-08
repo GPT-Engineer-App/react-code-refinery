@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import Prism from 'prismjs';
 import 'prismjs/themes/prism.css';
 import 'prismjs/components/prism-javascript';
@@ -65,40 +66,44 @@ const MyComponent = () => {
 export default MyComponent;
   `.trim());
 
-  const [searchText, setSearchText] = useState('const MyComponent');
-  const [replaceText, setReplaceText] = useState('const MyUpdatedComponent');
+  const [searchText, setSearchText] = useState('');
+  const [replaceText, setReplaceText] = useState('');
   const [codeText, setCodeText] = useState(originalCode.current);
-
   const [highlightRanges, setHighlightRanges] = useState([]);
+  const [streamProgress, setStreamProgress] = useState(0);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [canReplace, setCanReplace] = useState(false);
 
-  const performSearch = useCallback(() => {
+  const performSearch = useCallback((fullSearchText) => {
     const ranges = [];
     let startIndex = 0;
     while (startIndex < codeText.length) {
-      const index = codeText.indexOf(searchText, startIndex);
+      const index = codeText.indexOf(fullSearchText, startIndex);
       if (index === -1) break;
-      ranges.push({ start: index, end: index + searchText.length });
-      startIndex = index + searchText.length;
+      ranges.push({ start: index, end: index + fullSearchText.length });
+      startIndex = index + fullSearchText.length;
     }
-    setHighlightRanges(ranges);
-  }, [codeText, searchText]);
+    setHighlightRanges(ranges.length === 1 ? ranges : []);
+    setCanReplace(ranges.length === 1);
+  }, [codeText]);
 
   const performReplace = useCallback(() => {
-    let newCodeText = codeText;
-    const sortedRanges = [...highlightRanges].sort((a, b) => b.start - a.start);
-    sortedRanges.forEach(range => {
-      newCodeText = 
-        newCodeText.slice(0, range.start) +
+    if (highlightRanges.length === 1) {
+      const range = highlightRanges[0];
+      const newCodeText = 
+        codeText.slice(0, range.start) +
         replaceText +
-        newCodeText.slice(range.end);
-    });
-    setCodeText(newCodeText);
-    setHighlightRanges([]);
+        codeText.slice(range.end);
+      setCodeText(newCodeText);
+      setHighlightRanges([]);
+      setCanReplace(false);
+    }
   }, [codeText, replaceText, highlightRanges]);
 
   const handleSearchReplace = () => {
-    if (highlightRanges.length === 0) {
-      performSearch();
+    if (!canReplace) {
+      setIsStreaming(true);
+      setStreamProgress(0);
     } else {
       performReplace();
     }
@@ -109,15 +114,28 @@ export default MyComponent;
     setReplaceText('');
     setCodeText(originalCode.current);
     setHighlightRanges([]);
+    setStreamProgress(0);
+    setIsStreaming(false);
+    setCanReplace(false);
   };
 
   useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-      performSearch();
-    }, 300);
+    if (isStreaming) {
+      let currentProgress = 0;
+      const interval = setInterval(() => {
+        if (currentProgress < searchText.length) {
+          currentProgress++;
+          setStreamProgress(currentProgress);
+          performSearch(searchText.slice(0, currentProgress));
+        } else {
+          setIsStreaming(false);
+          clearInterval(interval);
+        }
+      }, 200);
 
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchText, codeText, performSearch]);
+      return () => clearInterval(interval);
+    }
+  }, [isStreaming, searchText, performSearch]);
 
   return (
     <div className="min-h-screen flex bg-white">
@@ -127,18 +145,23 @@ export default MyComponent;
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
           className="mb-4 h-40"
+          disabled={isStreaming}
         />
         <h2 className="text-xl font-semibold mb-2">Replace</h2>
         <Textarea
           value={replaceText}
           onChange={(e) => setReplaceText(e.target.value)}
           className="mb-4 h-40"
+          disabled={isStreaming}
         />
+        {isStreaming && (
+          <Progress value={(streamProgress / searchText.length) * 100} className="mb-4" />
+        )}
         <div className="flex space-x-2">
-          <Button onClick={handleSearchReplace}>
-            {highlightRanges.length === 0 ? "Search" : "Replace"}
+          <Button onClick={handleSearchReplace} disabled={isStreaming || (searchText.length === 0 && !canReplace)}>
+            {canReplace ? "Replace" : "Search"}
           </Button>
-          <Button onClick={handleReset} variant="outline">
+          <Button onClick={handleReset} variant="outline" disabled={isStreaming}>
             Reset
           </Button>
         </div>
