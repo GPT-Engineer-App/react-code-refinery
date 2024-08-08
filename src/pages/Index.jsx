@@ -63,34 +63,6 @@ export default MyComponent;
   const [searchText, setSearchText] = useState('const MyComponent');
   const [replaceText, setReplaceText] = useState('const MyUpdatedComponent');
   const [codeText, setCodeText] = useState(originalCode.current);
-import React, { useState, useEffect } from 'react';
-
-const MyComponent = () => {
-  const [data, setData] = useState([]);
-
-  useEffect(() => {
-    async function fetchData() {
-      const response = await fetch('https://api.example.com/data');
-      const result = await response.json();
-      setData(result);
-    }
-    fetchData();
-  }, []);
-
-  return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Data List</h1>
-      <ul>
-        {data.map(item => (
-          <li key={item.id}>{item.name}</li>
-        ))}
-      </ul>
-    </div>
-  );
-};
-
-export default MyComponent;
-  `.trim());
 
   const [highlightRange, setHighlightRange] = useState(null);
   const [currentSearchIndex, setCurrentSearchIndex] = useState(0);
