@@ -6,7 +6,7 @@ import 'prismjs/components/prism-javascript';
 import 'prismjs/components/prism-jsx';
 import 'prismjs/components/prism-typescript';
 import 'prismjs/components/prism-tsx';
-import 'prismjs/components/prism-prisma';
+import 'prismjs/components/prism-css';
 
 const CodeDisplay = ({ code, language }) => {
   useEffect(() => {
@@ -25,28 +25,26 @@ const Index = () => {
   const [replaceText, setReplaceText] = useState('const MyComponent = () => {\n  return (\n    <div>\n      <h1>Hello, React!</h1>\n      <p>Welcome to my app.</p>\n    </div>\n  );\n};');
 
   const fakeReactCode = `
-import React from 'react';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import React, { useState, useEffect } from 'react';
 
 const MyComponent = () => {
-  const [users, setUsers] = useState([]);
+  const [data, setData] = useState([]);
 
   useEffect(() => {
-    async function fetchUsers() {
-      const fetchedUsers = await prisma.user.findMany();
-      setUsers(fetchedUsers);
+    async function fetchData() {
+      const response = await fetch('https://api.example.com/data');
+      const result = await response.json();
+      setData(result);
     }
-    fetchUsers();
+    fetchData();
   }, []);
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">User List</h1>
+      <h1 className="text-2xl font-bold mb-4">Data List</h1>
       <ul>
-        {users.map(user => (
-          <li key={user.id}>{user.name}</li>
+        {data.map(item => (
+          <li key={item.id}>{item.name}</li>
         ))}
       </ul>
     </div>
@@ -54,34 +52,29 @@ const MyComponent = () => {
 };
 
 export default MyComponent;
-  `.trim();
+`.trim();
 
-  const fakePrismaSchema = `
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+const fakeCSS = `
+.container {
+  max-width: 800px;
+  margin: 0 auto;
 }
 
-generator client {
-  provider = "prisma-client-js"
+.title {
+  font-size: 24px;
+  color: #333;
+  margin-bottom: 16px;
 }
 
-model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
-  posts Post[]
+.list-item {
+  padding: 8px;
+  border-bottom: 1px solid #eee;
 }
 
-model Post {
-  id        Int     @id @default(autoincrement())
-  title     String
-  content   String?
-  published Boolean @default(false)
-  author    User    @relation(fields: [authorId], references: [id])
-  authorId  Int
+.list-item:last-child {
+  border-bottom: none;
 }
-  `.trim();
+`.trim();
 
   return (
     <div className="min-h-screen flex bg-white">
@@ -102,8 +95,8 @@ model Post {
       <div className="w-2/3 p-4">
         <h2 className="text-2xl font-bold mb-4">Formatted React Code</h2>
         <CodeDisplay code={fakeReactCode} language="jsx" />
-        <h2 className="text-2xl font-bold mt-8 mb-4">Prisma Schema</h2>
-        <CodeDisplay code={fakePrismaSchema} language="prisma" />
+        <h2 className="text-2xl font-bold mt-8 mb-4">CSS Styles</h2>
+        <CodeDisplay code={fakeCSS} language="css" />
       </div>
     </div>
   );
