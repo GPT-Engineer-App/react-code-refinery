@@ -6,7 +6,6 @@ import 'prismjs/components/prism-javascript';
 import 'prismjs/components/prism-jsx';
 import 'prismjs/components/prism-typescript';
 import 'prismjs/components/prism-tsx';
-import 'prismjs/components/prism-css';
 
 const CodeDisplay = ({ code, language }) => {
   useEffect(() => {
@@ -23,8 +22,7 @@ const CodeDisplay = ({ code, language }) => {
 const Index = () => {
   const [searchText, setSearchText] = useState('const MyComponent = () => {\n  return (\n    <div>\n      <h1>Hello, World!</h1>\n    </div>\n  );\n};');
   const [replaceText, setReplaceText] = useState('const MyComponent = () => {\n  return (\n    <div>\n      <h1>Hello, React!</h1>\n      <p>Welcome to my app.</p>\n    </div>\n  );\n};');
-
-  const fakeReactCode = `
+  const [codeText, setCodeText] = useState(`
 import React, { useState, useEffect } from 'react';
 
 const MyComponent = () => {
@@ -52,29 +50,7 @@ const MyComponent = () => {
 };
 
 export default MyComponent;
-`.trim();
-
-const fakeCSS = `
-.container {
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-.title {
-  font-size: 24px;
-  color: #333;
-  margin-bottom: 16px;
-}
-
-.list-item {
-  padding: 8px;
-  border-bottom: 1px solid #eee;
-}
-
-.list-item:last-child {
-  border-bottom: none;
-}
-`.trim();
+  `.trim());
 
   return (
     <div className="min-h-screen flex bg-white">
@@ -93,10 +69,8 @@ const fakeCSS = `
         />
       </div>
       <div className="w-2/3 p-4">
-        <h2 className="text-2xl font-bold mb-4">Formatted React Code</h2>
-        <CodeDisplay code={fakeReactCode} language="jsx" />
-        <h2 className="text-2xl font-bold mt-8 mb-4">CSS Styles</h2>
-        <CodeDisplay code={fakeCSS} language="css" />
+        <h2 className="text-2xl font-bold mb-4">Code</h2>
+        <CodeDisplay code={codeText} language="jsx" />
       </div>
     </div>
   );
