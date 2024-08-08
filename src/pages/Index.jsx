@@ -135,7 +135,7 @@ export default MyComponent;
         />
         <div className="flex space-x-2">
           <Button onClick={handleSearchReplace}>
-            {currentSearchIndex < searchText.length ? "Search" : "Replace"}
+            {highlightRanges.length === 0 ? "Search" : "Replace"}
           </Button>
           <Button onClick={handleReset} variant="outline">
             Reset
